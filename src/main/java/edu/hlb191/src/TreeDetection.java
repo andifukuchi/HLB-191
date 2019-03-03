@@ -83,6 +83,8 @@ class TreeDetector {
 	public void detectAndDisplay(Mat frame, CascadeClassifier faceCascade, File output, String fileName, int min_size) {
 		Mat frameGray = new Mat();
 		frame.copyTo(frameGray);
+		Mat frameWithMarkings = new Mat();
+		frame.copyTo(frameWithMarkings);
 		// Imgproc.cvtColor(frame, frameGray, Imgproc.COLOR_BGR2GRAY);
 		// Imgproc.cvtColor(frame, frameGray, Imgproc.COLOR_RGB2GRAY);
 
@@ -95,22 +97,25 @@ class TreeDetector {
 		List<Rect> listOfFaces = faces.toList();
 		int i = 0;
 		for (Rect face : listOfFaces) {
-			/*
-			 * Point center = new Point(face.x + face.width / 2, face.y + face.height / 2);
-			 * Imgproc.ellipse(frame, center, new Size(face.width / 2, face.height / 2), 0,
-			 * 0, 360, new Scalar(255, 0, 255));
-			 */
-
+			//create an index image to reference locations
+			Point center = new Point(face.x + face.width / 2, face.y + face.height / 2);
+			Imgproc.ellipse(frameWithMarkings, center, new Size(face.width / 2, face.height / 2), 0, 0, 360,
+					new Scalar(255, 0, 255));
+			Imgproc.putText(frameWithMarkings, "" + i, center, Core.FONT_HERSHEY_PLAIN, 1.5, new Scalar(255,0,0));
+			
+			//cut image and save to output folder
 			Mat croppedImage = new Mat(frame, face);
 			// showImage(croppedImage);
 			Imgcodecs.imwrite(output.getAbsolutePath() + "/" + fileName.replace(".tif", "") + "_" + i + ".tif",
 					croppedImage);
 			i++;
 		}
-
+		//save index image
+		Imgcodecs.imwrite(output.getAbsolutePath() + "/" + fileName.replace(".tif", "") + "_index.tif",
+				frameWithMarkings);
 		// -- Show what you got
 		// HighGui.imshow("Capture - Face detection", frame );
-		showImage(frame);
+		//showImage(frameWithMarkings);
 	}
 
 	public void run(String[] args) {
@@ -150,20 +155,6 @@ class TreeDetector {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-		}
-	}
-
-	private static final class ProcessFile extends SimpleFileVisitor<Path> {
-		@Override
-		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-			System.out.println("Processing file:" + file);
-			return FileVisitResult.CONTINUE;
-		}
-
-		@Override
-		public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-			System.out.println("Processing directory:" + dir);
-			return FileVisitResult.CONTINUE;
 		}
 	}
 
