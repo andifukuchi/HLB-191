@@ -49,9 +49,20 @@ public class NDVI {
 			IIORegistry registry = IIORegistry.getDefaultInstance();
 			registry.registerServiceProvider(new RawTiffImageReader.Spi());
 			
-			File input = new File("D:\\edu\\investigacion-hlb\\workspace\\HLB-191\\src\\main\\java\\edu\\hlb191\\src\\TTC06200_CP.tif");
+			//File input = new File("D:\\edu\\investigacion-hlb\\workspace\\HLB-191\\src\\main\\java\\edu\\hlb191\\src\\TTC06200_CP.tif");
 			//File input = new File("D:\\edu\\investigacion-hlb\\workspace\\HLB-191\\src\\main\\java\\edu\\hlb191\\src\\TTC05740_CP.tif");
 			//File input = new File("D:\\edu\\investigacion-hlb\\workspace\\HLB-191\\src\\main\\java\\edu\\hlb191\\src\\TTC05732_CP.tif");
+			//File input = new File("D:\\edu\\investigacion-hlb\\workspace\\HLB-191\\src\\main\\java\\edu\\hlb191\\src\\img\\output1\\20\\TTC06055_CP.TIF_0.tif");
+			//File input = new File("D:\\edu\\investigacion-hlb\\workspace\\HLB-191\\src\\main\\java\\edu\\hlb191\\src\\img\\output1\\20\\TTC06055_CP.TIF_1.tif");
+			//File input = new File("D:\\edu\\investigacion-hlb\\workspace\\HLB-191\\src\\main\\java\\edu\\hlb191\\src\\img\\output1\\20\\TTC06200_CP.TIF_3.tif");
+			//File input = new File("D:\\edu\\investigacion-hlb\\workspace\\HLB-191\\src\\main\\java\\edu\\hlb191\\src\\img\\output1\\20\\TTC06200_CP.TIF_index.tif");
+			
+			//File input = new File("D:\\edu\\investigacion-hlb\\workspace\\HLB-191\\src\\main\\java\\edu\\hlb191\\src\\equalizeHist\\output\\20\\TTC06055_CP.TIF_0.tif");
+			File input = new File("D:\\edu\\investigacion-hlb\\workspace\\HLB-191\\src\\main\\java\\edu\\hlb191\\src\\equalizeHist\\output\\20\\TTC06200_CP.TIF_2.tif");
+			//File input = new File("D:\\edu\\investigacion-hlb\\workspace\\HLB-191\\src\\main\\java\\edu\\hlb191\\src\\equalizeHist\\output\\20\\TTC06200_CP.TIF_3.tif");
+			//File input = new File("D:\\edu\\investigacion-hlb\\workspace\\HLB-191\\src\\main\\java\\edu\\hlb191\\src\\equalizeHist\\output\\20\\TTC06200_CP.TIF_index.tif");
+			
+			
 			
 			
 			image = ImageIO.read(input);
@@ -99,6 +110,7 @@ public class NDVI {
 	        final  JLabel orangeText=new JLabel();
 	        orangeText.setText(""+cont.orangeThreshold);
 	        JSlider greenSlider = new JSlider(JSlider.HORIZONTAL,-100, 100, 80);
+	        //JSlider greenSlider = new JSlider(JSlider.HORIZONTAL,0, 255, 80);
 	        greenSlider.setMajorTickSpacing(25);
 	        greenSlider.setMinorTickSpacing(1);
 	        greenSlider.setPaintTicks(true);
@@ -153,11 +165,36 @@ public class NDVI {
 
 	}
 	private static void applyMethod(ImageContainer cont) {
-		//applyNDVI(cont);
+		applyNDVI(cont);
 		//applyNDI(cont);
 		//applyExR(cont);
-		applyColorSwap(cont);
+		//applyColorSwap(cont);
 	}
+	
+	private static void applyNDVI2(ImageContainer cont) {
+		int width = cont.source.getWidth();
+		int height = cont.source.getHeight();
+		for (int i = 0; i < height; i++) {
+			for (int j = 0; j < width; j++) {
+				Color c = new Color(cont.source.getRGB(j, i));
+				//int col1 = c.getRed(); //nir
+				int col1 = c.getGreen(); //red
+				//int col1 = c.getBlue(); //green
+				Color grayColor;
+				if(col1 >= cont.greenThreshold*100.0d) {
+					//healthy vegetation green
+					grayColor = new Color(0,255,0);
+					//grayColor = new Color(0,0,0);
+				}
+				else {
+					grayColor = new Color(0,0,0);
+				}
+				
+				cont.dest.setRGB(j, i, grayColor.getRGB());
+			}
+		}
+	}
+	
 	
 	private static void applyNDVI(ImageContainer cont) {
 		int width = cont.source.getWidth();
@@ -167,8 +204,56 @@ public class NDVI {
 				Color c = new Color(cont.source.getRGB(j, i));
 				int col1 = c.getRed(); //nir
 				//int col1 = c.getGreen(); //red
+				//int col1 = c.getBlue(); //green
 				//int col2 = c.getGreen(); //red
 				int col2 = c.getBlue(); //green
+				//int col2 = ( c.getGreen() + c.getBlue() ) / 2 ; // Avg red + green 
+				//ndvi = (NIR - RED) / (NIR + RED)
+				Color grayColor;
+				double ndvi = 0d;
+				if((col1 + col2)==0) {
+					ndvi = -1.1d; //division by zero
+				}
+				else {
+					ndvi = (col1 - col2) / ((double)(col1 + col2));
+				}
+
+				if (ndvi == -1.1d) {
+					//non-vegetal - blue
+					grayColor =  new Color(0,0,255);
+					//grayColor = new Color(0,0,0);
+				}
+				else if(ndvi < 0.0) {
+					//negative value, probably an artificial material
+					//extreme stress - violet/purple
+					grayColor = new Color(0,0,255);
+					//grayColor = new Color(0,0,0);
+				}
+				else if (ndvi == 1.0) {
+					//non-vegetal - blue
+					grayColor = new Color(0,0,255);
+					//grayColor = new Color(0,0,0);
+				}
+				else {
+					//dead vegetation red
+					grayColor = new Color(255,0,0);
+				}
+				cont.dest.setRGB(j, i, grayColor.getRGB());
+			}
+		}
+	}
+	private static void applyNDVI1(ImageContainer cont) {
+		int width = cont.source.getWidth();
+		int height = cont.source.getHeight();
+		for (int i = 0; i < height; i++) {
+			for (int j = 0; j < width; j++) {
+				Color c = new Color(cont.source.getRGB(j, i));
+				int col1 = c.getRed(); //nir
+				//int col1 = c.getGreen(); //red
+				//int col1 = c.getBlue(); //green
+				//int col2 = c.getGreen(); //red
+				int col2 = c.getBlue(); //green
+				//int col2 = ( c.getGreen() + c.getBlue() ) / 2 ; // Avg red + green 
 				//ndvi = (NIR - RED) / (NIR + RED)
 				Color grayColor;
 				double ndvi = 0d;
